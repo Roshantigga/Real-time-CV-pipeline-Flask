@@ -1,7 +1,6 @@
-
 import cv2
-from datetime import datetime
 import time
+from datetime import datetime
 
 class EventDetector:
     def __init__(self):
@@ -9,18 +8,17 @@ class EventDetector:
         self.last_event_time = 0
         self.motion_counter = 0
 
-        # Tuning parameters
         self.MIN_MOTION_AREA = 2500
-        self.REQUIRED_FRAMES = 3     # motion must persist
-        self.COOLDOWN_SECONDS = 2    # no spam events
+        self.REQUIRED_FRAMES = 3
+        self.COOLDOWN_SECONDS = 2
 
     def detect_motion(self, gray):
         if self.prev_gray is None:
             self.prev_gray = gray
             return None
 
-        frame_delta = cv2.absdiff(self.prev_gray, gray)
-        thresh = cv2.threshold(frame_delta, 30, 255, cv2.THRESH_BINARY)[1]
+        delta = cv2.absdiff(self.prev_gray, gray)
+        thresh = cv2.threshold(delta, 30, 255, cv2.THRESH_BINARY)[1]
         thresh = cv2.dilate(thresh, None, iterations=2)
 
         contours, _ = cv2.findContours(
@@ -29,14 +27,12 @@ class EventDetector:
 
         motion_area = 0
         for c in contours:
-            area = cv2.contourArea(c)
-            if area < self.MIN_MOTION_AREA:
+            if cv2.contourArea(c) < self.MIN_MOTION_AREA:
                 continue
-            motion_area += area
+            motion_area += cv2.contourArea(c)
 
         self.prev_gray = gray
 
-        # ---- Stability check ----
         if motion_area > 0:
             self.motion_counter += 1
         else:
@@ -44,7 +40,6 @@ class EventDetector:
 
         current_time = time.time()
 
-        # ---- Trigger event only if motion is stable ----
         if (
             self.motion_counter >= self.REQUIRED_FRAMES and
             current_time - self.last_event_time > self.COOLDOWN_SECONDS
@@ -59,4 +54,3 @@ class EventDetector:
             }
 
         return None
-
